@@ -1,5 +1,6 @@
 package com.bsc.services;
 
+import java.util.List;
 import java.util.Map;
 
 public interface LookupServer {
@@ -38,7 +39,7 @@ public interface LookupServer {
      * @param keyValues
      * @throws LookupServiceException
      */
-    public void set(String table, String key, Map<String, Object> keyValues) throws LookupServiceException;
+    public void set(String table, String key, Map<String, String> keyValues) throws LookupServiceException;
 
     /**
      *
@@ -56,6 +57,29 @@ public interface LookupServer {
      * @return
      * @throws LookupServiceException
      */
-    public Map<String, Object> getHash(String table, String key) throws LookupServiceException;
+    public Map<String, String> getHash(String table, String key) throws LookupServiceException;
 
+    /**
+     * Get the list of keys from the table
+     * @param table
+     * @return
+     * @throws LookupServiceException
+     */
+    public List<String> getKeys(String table) throws LookupServiceException;
+
+    /**
+     *
+     * @param table
+     * @param key
+     * @throws LookupServiceException
+     */
+    public void delete(String table, String key) throws LookupServiceException;
+
+    /**
+     *
+     * @param table
+     * @param keys
+     * @throws LookupServiceException
+     */
+    public void delete(String table, String... keys) throws LookupServiceException;
 }

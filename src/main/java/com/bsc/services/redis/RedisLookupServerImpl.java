@@ -7,6 +7,7 @@ import com.lambdaworks.redis.RedisURI;
 import com.lambdaworks.redis.api.StatefulRedisConnection;
 import com.lambdaworks.redis.api.sync.RedisCommands;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -96,8 +97,9 @@ public class RedisLookupServerImpl implements LookupServer {
      * @throws LookupServiceException
      */
     @Override
-    public void set(String table, String key, Map<String, Object> keyValues) throws LookupServiceException {
-
+    public void set(String table, String key, Map<String, String> keyValues) throws LookupServiceException {
+        redisCommands.select(RedisTables.LOOKUP_TBL.valueOf(table).ordinal());
+        redisCommands.hmset(key, keyValues);
     }
 
     /**
@@ -107,8 +109,46 @@ public class RedisLookupServerImpl implements LookupServer {
      * @throws LookupServiceException
      */
     @Override
-    public Map<String, Object> getHash(String table, String key) throws LookupServiceException {
-        return null;
+    public Map<String, String> getHash(String table, String key) throws LookupServiceException {
+        redisCommands.select(RedisTables.LOOKUP_TBL.valueOf(table).ordinal());
+
+        return redisCommands.hgetall(key);
+    }
+
+    /**
+     * Get the list of keys from the table
+     *
+     * @param table
+     * @return
+     * @throws LookupServiceException
+     */
+    @Override
+    public List<String> getKeys(String table) throws LookupServiceException {
+        redisCommands.select(RedisTables.LOOKUP_TBL.valueOf(table).ordinal());
+        return redisCommands.keys("*");
+    }
+
+
+    /**
+     * @param table
+     * @param key
+     * @throws LookupServiceException
+     */
+    @Override
+    public void delete(String table, String key) throws LookupServiceException {
+        redisCommands.select(RedisTables.LOOKUP_TBL.valueOf(table).ordinal());
+        redisCommands.del(key);
+    }
+
+    /**
+     * @param table
+     * @param keys
+     * @throws LookupServiceException
+     */
+    @Override
+    public void delete(String table, String... keys) throws LookupServiceException {
+        redisCommands.select(RedisTables.LOOKUP_TBL.valueOf(table).ordinal());
+        redisCommands.del(keys);
     }
 
     /**
@@ -117,6 +157,7 @@ public class RedisLookupServerImpl implements LookupServer {
     @Override
     public void disconnect() {
         connection.close();
+        connection = null;
     }
 
     @Override
