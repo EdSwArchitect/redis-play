@@ -78,6 +78,41 @@ public class RedisLookupServerImpl implements LookupServer {
     }
 
     /**
+     * Set the key/value pair for the table
+     *
+     * @param table The table in the lookup server
+     * @param key   The key
+     * @param value The value
+     * @param time
+     * @param unit
+     * @throws LookupServiceException
+     */
+    @Override
+    public void set(String table, String key, String value, long time, TimeUnit unit) throws LookupServiceException {
+        redisCommands.select(RedisTables.LOOKUP_TBL.valueOf(table).ordinal());
+
+        long convTime = 0;
+
+        switch(unit) {
+            case DAYS:
+                convTime = time *24 * 60 * 60;
+                break;
+            case HOURS:
+                convTime = time * 60 * 60;
+                break;
+            case MINUTES:
+                convTime = time * 60;
+                break;
+            case SECONDS:
+                convTime = time;
+                break;
+            default:
+        }
+
+        redisCommands.setex(key, convTime,value);
+    }
+
+    /**
      * @param table
      * @param key
      * @return
@@ -99,7 +134,44 @@ public class RedisLookupServerImpl implements LookupServer {
     @Override
     public void set(String table, String key, Map<String, String> keyValues) throws LookupServiceException {
         redisCommands.select(RedisTables.LOOKUP_TBL.valueOf(table).ordinal());
+
+
         redisCommands.hmset(key, keyValues);
+    }
+
+    /**
+     * @param table
+     * @param key
+     * @param keyValues
+     * @param time
+     * @param unit
+     * @throws LookupServiceException
+     */
+    @Override
+    public void set(String table, String key, Map<String, String> keyValues, long time, TimeUnit unit) throws LookupServiceException {
+        redisCommands.select(RedisTables.LOOKUP_TBL.valueOf(table).ordinal());
+
+        long convTime = 0;
+
+        switch(unit) {
+            case DAYS:
+                convTime = time *24 * 60 * 60;
+                break;
+            case HOURS:
+                convTime = time * 60 * 60;
+                break;
+            case MINUTES:
+                convTime = time * 60;
+                break;
+            case SECONDS:
+                convTime = time;
+                break;
+            default:
+        }
+
+        redisCommands.hmset(key, keyValues);
+        redisCommands.expire(key, convTime);
+
     }
 
     /**

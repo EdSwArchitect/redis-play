@@ -2,6 +2,7 @@ package com.bsc.services;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public interface LookupServer {
     /**
@@ -33,6 +34,17 @@ public interface LookupServer {
     public void set(String table, String key, String value) throws LookupServiceException;
 
     /**
+     * Set the key/value pair for the table
+     * @param table The table in the lookup server
+     * @param key The key
+     * @param value The value
+     * @param time
+     * @param unit
+     * @throws LookupServiceException
+     */
+    public void set(String table, String key, String value, long time, TimeUnit unit) throws LookupServiceException;
+
+    /**
      *
      * @param table
      * @param key
@@ -40,6 +52,17 @@ public interface LookupServer {
      * @throws LookupServiceException
      */
     public void set(String table, String key, Map<String, String> keyValues) throws LookupServiceException;
+
+    /**
+     * 
+     * @param table
+     * @param key
+     * @param keyValues
+     * @param time
+     * @param unit
+     * @throws LookupServiceException
+     */
+    public void set(String table, String key, Map<String, String> keyValues, long time, TimeUnit unit) throws LookupServiceException;
 
     /**
      *
