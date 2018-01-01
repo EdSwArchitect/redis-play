@@ -82,4 +82,18 @@ public interface LookupServer {
      * @throws LookupServiceException
      */
     public void delete(String table, String... keys) throws LookupServiceException;
+
+    /**
+     * Watch changes in the table
+     * @param table The table name
+     * @throws LookupServiceException Thrown if there is an error
+     */
+    public void watch(String table) throws LookupServiceException;
+
+    /**
+     * Stop  watching changes in the table
+     * @param table The table name
+     * @throws LookupServiceException
+     */
+    public void unwatch(String table) throws LookupServiceException;
 }

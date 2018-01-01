@@ -152,6 +152,28 @@ public class RedisLookupServerImpl implements LookupServer {
     }
 
     /**
+     * Watch changes in the table
+     *
+     * @param table The table name
+     * @throws LookupServiceException Thrown if there is an error
+     */
+    @Override
+    public void watch(String table) throws LookupServiceException {
+        throw new LookupServiceException("Redis only allows a watch on transactions. Not implemented.");
+    }
+
+    /**
+     * Stop  watching changes in the table
+     *
+     * @param table The table name
+     * @throws LookupServiceException
+     */
+    @Override
+    public void unwatch(String table) throws LookupServiceException {
+        throw new LookupServiceException("Redis only allows a watch on transactions. Not implemented.");
+    }
+
+    /**
      * Disconnect
      */
     @Override
