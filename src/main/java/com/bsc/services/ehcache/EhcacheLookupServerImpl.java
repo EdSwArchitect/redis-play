@@ -4,40 +4,182 @@ import com.bsc.services.LookupServer;
 import com.bsc.services.LookupServiceException;
 import org.ehcache.Cache;
 import org.ehcache.CacheManager;
+import org.ehcache.PersistentCacheManager;
+import org.ehcache.config.ResourceUnit;
 import org.ehcache.config.builders.CacheConfigurationBuilder;
 import org.ehcache.config.builders.CacheManagerBuilder;
+import org.ehcache.config.builders.CacheManagerConfiguration;
+import org.ehcache.config.builders.ResourcePoolsBuilder;
 import org.ehcache.config.units.EntryUnit;
+import org.ehcache.config.units.MemoryUnit;
 import org.ehcache.expiry.Duration;
 import org.ehcache.expiry.Expirations;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+
 
 import static org.ehcache.config.builders.ResourcePoolsBuilder.newResourcePoolsBuilder;
 
 public class EhcacheLookupServerImpl implements LookupServer {
+
+    /** heap size */
+    public static final String HEAP_SIZE = "heap.size";
+    /** heap units */
+    public static final String HEAP_UNITS = "heap.units";
+    /** off heap size */
+    public static final String OFF_HEAP_SIZE = "offHeap.size";
+    /** off heap units */
+    public static final String OFF_HEAP_UNITS = "offHeap.units";
+    /** disk size */
+    public static final String DISK_SIZE = "disk.size";
+    /** disk units */
+    public static final String DISK_UNITS = "disk.units";
+    /** disk directory */
+    public static final String DISK_DIR = "disk.directory";
+    /** persistent on disk */
+    public static final String DISK_PERSISTENT = "disk.persistence";
+    /** cache name */
+    public static final String CACHE_NAME = "cache.name";
+    /** time to live */
+    public static final String TTL_TIME = "ttl.time";
+    /** ttl units */
+    public static final String TTL_UNITS = "ttl.units";
+    /** log */
+    private Logger log = LoggerFactory.getLogger(EhcacheLookupServerImpl.class);
+
     /**
      * cache manager
      */
     private CacheManager cm;
+    /** cache name */
+    private String cacheName;
     private HashMap<String, HashSet<String>> cacheKeys;
+
+
 
     /**
      *
      */
     public EhcacheLookupServerImpl() {
-        cm = CacheManagerBuilder.newCacheManagerBuilder()
-                .withCache("expires",
-                    CacheConfigurationBuilder.newCacheConfigurationBuilder(String.class, String.class,
-                            newResourcePoolsBuilder().heap(500, EntryUnit.ENTRIES)).
-                            withExpiry(Expirations.timeToLiveExpiration(Duration.of(45, TimeUnit.SECONDS))
-                            ))
-                .build();
-        cm.init();
-
-        cacheKeys = new HashMap<String, HashSet<String>>();
+//        cm = CacheManagerBuilder.newCacheManagerBuilder()
+//                .withCache("expires",
+//                    CacheConfigurationBuilder.newCacheConfigurationBuilder(String.class, String.class,
+//                            newResourcePoolsBuilder().heap(500, EntryUnit.ENTRIES)).
+//                            withExpiry(Expirations.timeToLiveExpiration(Duration.of(45, TimeUnit.SECONDS))
+//                            ))
+//                .build();
+//        cm.init();
+//
+//        cacheKeys = new HashMap<String, HashSet<String>>();
 
     }
+
+
+    /**
+     * Default initialization
+     */
+    @Override
+    public void init() {
+        // no-op
+    }
+
+    /**
+     * Initialization with parameters
+     *
+     * @param params
+     */
+    @Override
+    public void init(Map<String, Object> params) {
+        String l = String.format("The params are: %s", params);
+        log.info(l);
+
+        cacheName = (String)params.get(CACHE_NAME);
+
+        CacheManagerBuilder cmb = CacheManagerBuilder.newCacheManagerBuilder();
+        CacheManagerConfiguration<PersistentCacheManager> cmc = null;
+
+        CacheConfigurationBuilder ccb = null;
+        ResourcePoolsBuilder rpb = ResourcePoolsBuilder.newResourcePoolsBuilder();
+
+        if (params.containsKey(HEAP_SIZE)) {
+            long size = (long)params.get(HEAP_SIZE);
+            ResourceUnit unit = getUnit(params, HEAP_UNITS, EntryUnit.ENTRIES);
+
+            rpb = rpb.heap(size, unit);
+        }
+        if (params.containsKey(OFF_HEAP_SIZE)) {
+            long size = (long)params.get(OFF_HEAP_SIZE);
+            ResourceUnit unit = getUnit(params, OFF_HEAP_UNITS, EntryUnit.ENTRIES);
+
+            rpb = rpb.offheap(size, (MemoryUnit)unit);
+        }
+
+        if (params.containsKey(DISK_SIZE)) {
+            long size = (long)params.get(DISK_SIZE);
+            ResourceUnit unit = getUnit(params, DISK_UNITS, MemoryUnit.MB);
+
+            boolean persisted = false;
+
+            if (params.containsKey(DISK_PERSISTENT)) {
+                persisted = (Boolean)params.get(DISK_PERSISTENT);
+            }
+
+            rpb = rpb.disk(size, (MemoryUnit)unit, persisted);
+
+            if (persisted) {
+
+                if (params.containsKey(DISK_DIR)) {
+                    cmc = CacheManagerBuilder.persistence(new File((String)params.get(DISK_DIR)));
+
+                    cmb = cmb.with(cmc);
+                } // if (params.containsKey(DISK_DIR)) {
+            } // if (persisted) {
+
+
+        } // if (params.containsKey(DISK_SIZE)) {
+
+        //withExpiry(Expirations.timeToLiveExpiration(Duration.of(45, TimeUnit.SECONDS))
+        if (params.containsKey(TTL_TIME)) {
+            long ttl = (Long)params.get(TTL_TIME);
+            TimeUnit tu = TimeUnit.HOURS;
+
+            if (params.containsKey(TTL_UNITS)) {
+                String ttlUnits = ((String)params.get(TTL_UNITS)).toLowerCase();
+
+                if (ttlUnits.startsWith("sec")) {
+                    tu = TimeUnit.SECONDS;
+                }
+                else if (ttlUnits.startsWith("min")) {
+                    tu = TimeUnit.MINUTES;
+                }
+                else {
+                    tu = TimeUnit.HOURS;
+                }
+            } // if (params.containsKey(TTL_UNITS)) {
+
+            ccb = CacheConfigurationBuilder.newCacheConfigurationBuilder(String.class, String.class, rpb).
+                    withExpiry(Expirations.timeToLiveExpiration(Duration.of(ttl, tu)));
+        }
+        else {
+            ccb = CacheConfigurationBuilder.newCacheConfigurationBuilder(String.class, String.class, rpb);
+        }
+
+        cmb = cmb.withCache(cacheName, ccb);
+
+        cm = cmb.build();
+
+        l = String.format("CacheManagerBuilder: %s", cm);
+        log.info(l);
+
+        cm.init();
+
+        // no-op
+    }
+
 
     /**
      * Connect to the lookup server
@@ -65,7 +207,7 @@ public class EhcacheLookupServerImpl implements LookupServer {
      */
     @Override
     public String getInfo() throws LookupServiceException {
-        return "";
+        return cacheName;
     }
 
     /**
@@ -244,5 +386,45 @@ public class EhcacheLookupServerImpl implements LookupServer {
     @Override
     public void unwatch(String table) throws LookupServiceException {
 
+    }
+
+    /**
+     *
+     * @param params
+     * @param paramUnit
+     * @return
+     */
+    private ResourceUnit getUnit(Map<String, Object> params, String paramUnit, ResourceUnit defaultUnit) {
+        ResourceUnit unit;
+
+        String v = (String)params.get(paramUnit);
+
+        if (v != null) {
+            v = v.toLowerCase();
+
+            if (v.startsWith("mb")) {
+                unit = MemoryUnit.MB;
+            } // if (v.startsWith("mb")) {
+            else if (v.startsWith("gb")) {
+                unit = MemoryUnit.GB;
+            } // else if (v.startsWith("gb")) {
+            else {
+                unit = defaultUnit;
+            }
+        } // if (v != null) {
+        else {
+            unit = defaultUnit;
+        }
+
+        return unit;
+    }
+
+    @Override
+    public String toString() {
+        return "EhcacheLookupServerImpl{" +
+                "cm=" + cm +
+                ", cacheName='" + cacheName + '\'' +
+                ", cacheKeys=" + cacheKeys +
+                '}';
     }
 }

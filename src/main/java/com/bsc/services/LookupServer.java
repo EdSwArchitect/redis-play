@@ -6,6 +6,16 @@ import java.util.concurrent.TimeUnit;
 
 public interface LookupServer {
     /**
+     * Default initialization
+     */
+    public void init();
+
+    /**
+     * Initialization with parameters
+     * @param params
+     */
+    public void init(Map<String, Object>params);
+    /**
      * Connect to the lookup server
      * @param url The url for the lookup server
      * @throws LookupServiceException Thrown when connection error occurs
@@ -54,7 +64,7 @@ public interface LookupServer {
     public void set(String table, String key, Map<String, String> keyValues) throws LookupServiceException;
 
     /**
-     * 
+     *
      * @param table
      * @param key
      * @param keyValues

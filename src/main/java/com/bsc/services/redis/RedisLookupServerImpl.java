@@ -23,6 +23,24 @@ public class RedisLookupServerImpl implements LookupServer {
     private RedisCommands<String, String>redisCommands;
 
     /**
+     * Default initialization
+     */
+    @Override
+    public void init() {
+        // no-op
+    }
+
+    /**
+     * Initialization with parameters
+     *
+     * @param params
+     */
+    @Override
+    public void init(Map<String, Object> params) {
+        // no-op
+    }
+
+    /**
      * Connect to the Redis server
      * @param url The url for the lookup server
      * @throws LookupServiceException
