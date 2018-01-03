@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.HashMap;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
@@ -16,7 +17,7 @@ public class EhcacheLookupServerImplTest {
     private Logger log = LoggerFactory.getLogger(EhcacheLookupServerImplTest.class);
 
     @Test
-    public void init() {
+    public void getPutTest() {
 
         HashMap<String, Object> params = new HashMap<String, Object>();
 
@@ -52,33 +53,178 @@ public class EhcacheLookupServerImplTest {
         }
 
 
-        //        public static final String HEAP_UNITS = "heap.units";
-//        public static final String OFF_HEAP_SIZE = "offHeap.size";
-//        public static final String OFF_HEAP_UNITS = "offHeap.units";
-//        public static final String DISK_SIZE = "disk.size";
-//        public static final String DISK_UNITS = "disk.units";
-//        public static final String DISK_DIR = "disk.directory";
-//        public static final String DISK_PERSISTENT = "disk.persistence";
-//        public static final String CACHE_NAME = "cache.name";
-//        public static final String TTL_TIME = "ttl.time";
-//        public static final String TTL_UNITS = "ttl.units";
-
     }
 
     @Test
-    public void set() {
+    public void expelTest() {
+
+        HashMap<String, Object> params = new HashMap<String, Object>();
+
+        params.put(EhcacheLookupServerImpl.HEAP_SIZE, 5L);
+        params.put(EhcacheLookupServerImpl.HEAP_UNITS, "entries");
+        params.put(EhcacheLookupServerImpl.CACHE_NAME, "edwin_cache");
+
+        EhcacheLookupServerImpl cache = new EhcacheLookupServerImpl();
+        cache.init(params);
+
+        try {
+            String info = cache.getInfo();
+
+            log.info("Info: " + info);
+
+            for (int i = 1; i <= 5; i++) {
+                cache.set("edwin_cache", "key" + i, "valu" + i);
+            }
+
+            String line;
+
+            for (int i = 1; i <= 5; i++) {
+                line = String.format("Value for key%d: '%s'", i, cache.get("edwin_cache", "key"+i));
+                log.info(line);
+            }
+
+            for (int i = 6; i <= 10; i++) {
+                cache.set("edwin_cache", "key" + i, "valu" + i);
+            }
+
+            for (int i = 1; i <= 10; i++) {
+                line = String.format("Value for key%d: '%s'", i, cache.get("edwin_cache", "key"+i));
+                log.info(line);
+            }
+        } catch (LookupServiceException lse) {
+
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            lse.printStackTrace(pw);
+
+            Assert.fail(sw.toString());
+        }
     }
 
     @Test
-    public void get() {
+    public void expireTest()  {
+
+        HashMap<String, Object> params = new HashMap<String, Object>();
+
+        params.put(EhcacheLookupServerImpl.HEAP_SIZE, 5L);
+        params.put(EhcacheLookupServerImpl.HEAP_UNITS, "entries");
+        params.put(EhcacheLookupServerImpl.CACHE_NAME, "edwin_cache");
+        params.put(EhcacheLookupServerImpl.TTL_TIME, 45L);
+        params.put(EhcacheLookupServerImpl.TTL_UNITS, "seconds");
+
+        EhcacheLookupServerImpl cache = new EhcacheLookupServerImpl();
+        cache.init(params);
+
+        try {
+            String info = cache.getInfo();
+
+            log.info("Info: " + info);
+
+            for (int i = 1; i <= 5; i++) {
+                cache.set("edwin_cache", "key" + i, "valu" + i);
+            }
+
+            String line;
+
+            for (int i = 1; i <= 5; i++) {
+                line = String.format("Value for key%d: '%s'", i, cache.get("edwin_cache", "key"+i));
+                log.info(line);
+            }
+
+
+            try {
+                TimeUnit.SECONDS.sleep(60L);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            for (int i = 1; i <= 5; i++) {
+                line = String.format("Value for key%d: '%s'", i, cache.get("edwin_cache", "key"+i));
+                log.info(line);
+            }
+
+        } catch (LookupServiceException lse) {
+
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            lse.printStackTrace(pw);
+
+            Assert.fail(sw.toString());
+        }
     }
 
     @Test
-    public void delete() {
+    public void persistTest() {
+        HashMap<String, Object> params = new HashMap<String, Object>();
+
+        params.put(EhcacheLookupServerImpl.HEAP_SIZE, 5L);
+        params.put(EhcacheLookupServerImpl.HEAP_UNITS, "entries");
+        params.put(EhcacheLookupServerImpl.CACHE_NAME, "save_cache");
+        params.put(EhcacheLookupServerImpl.DISK_PERSISTENT, true);
+        params.put(EhcacheLookupServerImpl.DISK_DIR, "/home/edwin/cache");
+        params.put(EhcacheLookupServerImpl.DISK_SIZE, 500L);
+        params.put(EhcacheLookupServerImpl.DISK_UNITS, "mb");
+
+        EhcacheLookupServerImpl cache = new EhcacheLookupServerImpl();
+        cache.init(params);
+
+        try {
+            for (int i = 1; i <= 5; i++) {
+                cache.set("save_cache", "key" + i, "valu" + i);
+            }
+
+            String line;
+
+            for (int i = 1; i <= 5; i++) {
+                line = String.format("Value for key%d: '%s'", i, cache.get("save_cache", "key"+i));
+                log.info(line);
+            }
+
+        } catch (LookupServiceException lse) {
+
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            lse.printStackTrace(pw);
+
+            Assert.fail(sw.toString());
+        }
     }
 
     @Test
-    public void delete1() {
+    public void persistTestRead() {
+        HashMap<String, Object> params = new HashMap<String, Object>();
+
+        params.put(EhcacheLookupServerImpl.HEAP_SIZE, 5L);
+        params.put(EhcacheLookupServerImpl.HEAP_UNITS, "entries");
+        params.put(EhcacheLookupServerImpl.CACHE_NAME, "save_cache");
+        params.put(EhcacheLookupServerImpl.DISK_PERSISTENT, true);
+        params.put(EhcacheLookupServerImpl.DISK_DIR, "/home/edwin/cache");
+        params.put(EhcacheLookupServerImpl.DISK_SIZE, 500L);
+        params.put(EhcacheLookupServerImpl.DISK_UNITS, "mb");
+
+        EhcacheLookupServerImpl cache = new EhcacheLookupServerImpl();
+        cache.init(params);
+
+        try {
+            for (int i = 1; i <= 5; i++) {
+                cache.set("save_cache", "key" + i, "valu" + i);
+            }
+
+            String line;
+
+            for (int i = 1; i <= 5; i++) {
+                line = String.format("Value for key%d: '%s'", i, cache.get("save_cache", "key"+i));
+                log.info(line);
+            }
+
+        } catch (LookupServiceException lse) {
+
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            lse.printStackTrace(pw);
+
+            Assert.fail(sw.toString());
+        }
     }
 
     @Test
