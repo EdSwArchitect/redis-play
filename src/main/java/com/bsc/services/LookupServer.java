@@ -117,11 +117,12 @@ public interface LookupServer {
     public void delete(String table, String... keys) throws LookupServiceException;
 
     /**
-     * Watch changes in the table
-     * @param table The table name
-     * @throws LookupServiceException Thrown if there is an error
+     * Start watching
+     * @param table
+     * @param listener Object to call for notification
+     * @throws LookupServiceException
      */
-    public void watch(String table) throws LookupServiceException;
+    public void watch(String table, LookupListener listener) throws LookupServiceException;
 
     /**
      * Stop  watching changes in the table

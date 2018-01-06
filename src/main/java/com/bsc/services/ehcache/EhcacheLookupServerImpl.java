@@ -1,5 +1,6 @@
 package com.bsc.services.ehcache;
 
+import com.bsc.services.LookupListener;
 import com.bsc.services.LookupServer;
 import com.bsc.services.LookupServiceException;
 import org.ehcache.Cache;
@@ -12,6 +13,9 @@ import org.ehcache.config.builders.CacheManagerConfiguration;
 import org.ehcache.config.builders.ResourcePoolsBuilder;
 import org.ehcache.config.units.EntryUnit;
 import org.ehcache.config.units.MemoryUnit;
+import org.ehcache.event.EventFiring;
+import org.ehcache.event.EventOrdering;
+import org.ehcache.event.EventType;
 import org.ehcache.expiry.Duration;
 import org.ehcache.expiry.Expirations;
 import org.slf4j.Logger;
@@ -24,6 +28,9 @@ import java.util.concurrent.TimeUnit;
 
 import static org.ehcache.config.builders.ResourcePoolsBuilder.newResourcePoolsBuilder;
 
+/**
+ *
+ */
 public class EhcacheLookupServerImpl implements LookupServer {
 
     /** heap size */
@@ -48,6 +55,9 @@ public class EhcacheLookupServerImpl implements LookupServer {
     public static final String TTL_TIME = "ttl.time";
     /** ttl units */
     public static final String TTL_UNITS = "ttl.units";
+    /** listener */
+    public static final String KEY_LISTENER = "key.listener";
+
     /** log */
     private Logger log = LoggerFactory.getLogger(EhcacheLookupServerImpl.class);
 
@@ -58,6 +68,7 @@ public class EhcacheLookupServerImpl implements LookupServer {
     /** cache name */
     private String cacheName;
     private HashMap<String, HashSet<String>> cacheKeys;
+    private HashMap<String, LookupListener>listenerMap;
 
 
 
@@ -367,14 +378,30 @@ public class EhcacheLookupServerImpl implements LookupServer {
     }
 
     /**
-     * Watch changes in the table
+     * Start watching
      *
-     * @param table The table name
-     * @throws LookupServiceException Thrown if there is an error
+     * @param table
+     * @param listener Object to call for notification
+     * @throws LookupServiceException
      */
     @Override
-    public void watch(String table) throws LookupServiceException {
-        // definitely can be implemented. depends on cache configuration
+    public void watch(String table, LookupListener listener) throws LookupServiceException {
+        Cache<String, String> cache =
+                cm.getCache(table, String.class, String.class);
+
+        if (listenerMap == null) {
+            listenerMap = new HashMap<String, LookupListener>();
+        }
+
+        if (!listenerMap.containsKey(table)) {
+            ListenerObject lo = new ListenerObject(table);
+
+            cache.getRuntimeConfiguration().registerCacheEventListener(lo, EventOrdering.ORDERED,
+                    EventFiring.ASYNCHRONOUS, EnumSet.of(EventType.CREATED, EventType.REMOVED, EventType.EVICTED,
+                            EventType.EXPIRED));
+
+            listenerMap.put(table, listener);
+        }
     }
 
     /**

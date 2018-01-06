@@ -1,5 +1,6 @@
 package com.bsc.services.ehcache;
 
+import com.bsc.services.LookupListener;
 import com.bsc.services.LookupServiceException;
 import org.junit.Assert;
 import org.junit.Test;
@@ -15,6 +16,18 @@ import static org.junit.Assert.*;
 
 public class EhcacheLookupServerImplTest {
     private Logger log = LoggerFactory.getLogger(EhcacheLookupServerImplTest.class);
+
+    public class Listener implements LookupListener {
+
+        /**
+         * @param event
+         * @param key
+         */
+        @Override
+        public void keyChange(LISTENER_EVENT event, String key) {
+            log.info("KeyChange: {} for key {}", event, key);
+        }
+    }
 
     @Test
     public void getPutTest() {
@@ -115,7 +128,11 @@ public class EhcacheLookupServerImplTest {
         EhcacheLookupServerImpl cache = new EhcacheLookupServerImpl();
         cache.init(params);
 
+        Listener lobj = new Listener();
+
+
         try {
+            cache.watch("edwin_cache", lobj);
             String info = cache.getInfo();
 
             log.info("Info: " + info);

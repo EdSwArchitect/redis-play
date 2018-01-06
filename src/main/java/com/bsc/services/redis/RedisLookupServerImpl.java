@@ -1,5 +1,6 @@
 package com.bsc.services.redis;
 
+import com.bsc.services.LookupListener;
 import com.bsc.services.LookupServer;
 import com.bsc.services.LookupServiceException;
 import com.lambdaworks.redis.RedisClient;
@@ -248,7 +249,7 @@ public class RedisLookupServerImpl implements LookupServer {
      * @throws LookupServiceException Thrown if there is an error
      */
     @Override
-    public void watch(String table) throws LookupServiceException {
+    public void watch(String table, LookupListener listener) throws LookupServiceException {
         throw new LookupServiceException("Redis only allows a watch on transactions. Not implemented.");
     }
 
