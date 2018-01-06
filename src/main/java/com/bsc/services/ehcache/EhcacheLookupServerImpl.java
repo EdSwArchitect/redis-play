@@ -394,7 +394,7 @@ public class EhcacheLookupServerImpl implements LookupServer {
         }
 
         if (!listenerMap.containsKey(table)) {
-            ListenerObject lo = new ListenerObject(table);
+            ListenerObject lo = new ListenerObject(table, listener);
 
             cache.getRuntimeConfiguration().registerCacheEventListener(lo, EventOrdering.ORDERED,
                     EventFiring.ASYNCHRONOUS, EnumSet.of(EventType.CREATED, EventType.REMOVED, EventType.EVICTED,

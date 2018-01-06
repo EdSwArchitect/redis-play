@@ -133,6 +133,7 @@ public class EhcacheLookupServerImplTest {
 
         try {
             cache.watch("edwin_cache", lobj);
+
             String info = cache.getInfo();
 
             log.info("Info: " + info);

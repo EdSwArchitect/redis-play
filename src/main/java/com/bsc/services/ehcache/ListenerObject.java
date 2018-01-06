@@ -1,5 +1,6 @@
 package com.bsc.services.ehcache;
 
+import com.bsc.services.LookupListener;
 import org.ehcache.event.CacheEvent;
 import org.ehcache.event.CacheEventListener;
 import org.slf4j.Logger;
@@ -9,6 +10,7 @@ public class ListenerObject implements CacheEventListener {
 
     private Logger log = LoggerFactory.getLogger(ListenerObject.class);
     private String name;
+    private LookupListener topListener;
 
     private ListenerObject() {
 
@@ -19,7 +21,16 @@ public class ListenerObject implements CacheEventListener {
      * @param name
      */
     public ListenerObject(String name) {
-       this.name = name;
+       this(name, null);
+    }
+
+    /**
+     *
+     * @param name
+     */
+    public ListenerObject(String name, LookupListener topListener) {
+        this.topListener = topListener;
+        this.name = name;
     }
 
     /**
@@ -34,7 +45,29 @@ public class ListenerObject implements CacheEventListener {
      */
     @Override
     public void onEvent(CacheEvent event) {
+        Object key = event.getKey();
 
         log.info("Cache {} event fired: {}  for key: {}", name, event.getType(), event.getKey());
+
+        if (topListener != null) {
+            switch(event.getType()) {
+                case CREATED:
+                    topListener.keyChange(LookupListener.LISTENER_EVENT.CREATED, key.toString());
+                    break;
+                case EVICTED:
+                    topListener.keyChange(LookupListener.LISTENER_EVENT.EVICTED, key.toString());
+                    break;
+                case EXPIRED:
+                    topListener.keyChange(LookupListener.LISTENER_EVENT.EXPIRED, key.toString());
+                    break;
+                case REMOVED:
+                    topListener.keyChange(LookupListener.LISTENER_EVENT.REMOVED, key.toString());
+                    break;
+                case UPDATED:
+                    topListener.keyChange(LookupListener.LISTENER_EVENT.UPDATED, key.toString());
+                    break;
+            }
+
+        }
     }
 }
